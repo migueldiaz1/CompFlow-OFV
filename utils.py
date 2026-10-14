@@ -150,11 +150,13 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
                             zoom_regions, zoom_colors, zoom_size, suptitle=""):
     """Full breakdown, estimated vs. ground truth side by side: Frame 1,
     Frame 2, density lost/gained, flow direction (CompFlow-Patch | GT),
-    |w| (CompFlow-Patch | GT) -- 7 columns. Full-cell row = dense per-pixel
-    maps (no arrows); one row per zoom region = colored quiver arrows,
-    same HSV-direction convention throughout. Direction/magnitude GT
-    columns share their colorbar scale with their estimated counterpart
-    so the two are directly comparable."""
+    |w| (CompFlow-Patch | GT), AAE error map, |w| error map -- 9 columns.
+    Full-cell row = dense per-pixel maps (no arrows); one row per zoom
+    region = colored quiver arrows, same HSV-direction convention
+    throughout. Direction/magnitude GT columns share their colorbar scale
+    with their estimated counterpart so the two are directly comparable;
+    the two error maps use the same per-pixel angular-error convention as
+    Metrics/aae_weighted.py (arccos of the unit-vector dot product)."""
     overlay_rgb, vmax_diff = overlay_lost_gained(img1, img2, mask)
 
     dense_rgb, dense_vis = dense_direction_map(u_est, v_est, mask, img1, threshold=0.0)
@@ -164,11 +166,23 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
     mag_gt = np.where(mask > 0, np.hypot(u_gt, v_gt), np.nan)
     vmax_mag = float(np.nanmax([np.nanpercentile(mag, 99), np.nanpercentile(mag_gt, 99)]))
 
+    # Per-pixel error maps -- same angular-error convention as
+    # aae_weighted.compute_aae_weighted (arccos of the dot product of the
+    # two unit vectors, in degrees), and absolute magnitude difference.
+    mag_gt_eps = np.hypot(u_gt, v_gt) + 1e-6
+    mag_est_eps = np.hypot(u_est, v_est) + 1e-6
+    dot = np.clip((u_gt / mag_gt_eps) * (u_est / mag_est_eps) + (v_gt / mag_gt_eps) * (v_est / mag_est_eps), -1.0, 1.0)
+    aae_map = np.where(mask > 0, np.degrees(np.arccos(dot)), np.nan)
+    mag_err_map = np.where(mask > 0, np.abs(mag - mag_gt), np.nan)
+    vmax_aae = float(np.nanpercentile(aae_map, 99))
+    vmax_mag_err = float(np.nanpercentile(mag_err_map, 99))
+
     titles = ["Frame 1\n(chromatin density)", "Frame 2\n(chromatin density)",
              "Density\nlost / gained", "Flow direction\n(CompFlow-Patch)",
              "Flow direction\n(ground truth)", "$|\\mathbf{w}|$ (px/frame)\n(CompFlow-Patch)",
-             "$|\\mathbf{w}|$ (px/frame)\n(ground truth)"]
-    NCOL = 7
+             "$|\\mathbf{w}|$ (px/frame)\n(ground truth)", "AAE error map\n(deg)",
+             "$|\\mathbf{w}|$ error map\n(px/frame)"]
+    NCOL = 9
     N_ZOOM = len(zoom_regions)
     NROW = 1 + N_ZOOM
 
@@ -188,6 +202,8 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
         axF[j].imshow(np.concatenate([rgb, vis[..., None].astype(np.float32)], axis=-1))
     axF[5].imshow(mag, cmap="plasma", vmin=0, vmax=vmax_mag)
     axF[6].imshow(mag_gt, cmap="plasma", vmin=0, vmax=vmax_mag)
+    axF[7].imshow(aae_map, cmap="inferno", vmin=0, vmax=vmax_aae)
+    axF[8].imshow(mag_err_map, cmap="inferno", vmin=0, vmax=vmax_mag_err)
 
     for ax, title in zip(axF, titles):
         ax.set_title(title, fontsize=12, fontweight="bold")
@@ -210,6 +226,8 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
         colored_quiver(ax[4], u_gt, v_gt, mask, y0, x0, zoom_size, step=2.0, scale=30.0, width=0.0032)
         ax[5].imshow(mag[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
         ax[6].imshow(mag_gt[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
+        ax[7].imshow(aae_map[sl], cmap="inferno", vmin=0, vmax=vmax_aae, extent=ext)
+        ax[8].imshow(mag_err_map[sl], cmap="inferno", vmin=0, vmax=vmax_mag_err, extent=ext)
 
         ax[0].set_ylabel(f"zoom {i+1}", fontsize=12, fontweight="bold", color=color)
         for a in ax:
@@ -232,6 +250,12 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag), cmap="plasma"),
                           cax=axC[j], orientation="horizontal")
         cb.set_ticks([0, vmax_mag])
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_aae), cmap="inferno"),
+                      cax=axC[7], orientation="horizontal")
+    cb.set_ticks([0, vmax_aae])
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag_err), cmap="inferno"),
+                      cax=axC[8], orientation="horizontal")
+    cb.set_ticks([0, vmax_mag_err])
 
     for ax in [axF] + axZ:
         for a in ax:
