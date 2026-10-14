@@ -12,21 +12,29 @@ from matplotlib.patches import Rectangle
 
 
 def pick_zoom_regions(mask, size=30, n=3, seed=None, min_sep=40):
-    """n interior (y0, x0) top-left corners, size x size, fully inside the
-    mask's bounding box and spread at least min_sep apart from each other.
-    seed=None (default) -> a different, genuinely random set each run."""
+    """n interior (y0, x0) top-left corners, size x size, spread at least
+    min_sep apart from each other. Requires the crop's own full size x
+    size footprint to sit inside the mask (not just its center pixel), so
+    a zoomed crop doesn't show black background bleeding in at a corner
+    or edge -- relaxed in steps only if the cell is too small/thin to fit
+    n such non-overlapping, fully-inside crops. seed=None (default) -> a
+    different, genuinely random set each run."""
     ys, xs = np.nonzero(mask > 0)
     y0, y1, x0, x1 = ys.min(), ys.max() - size, xs.min(), xs.max() - size
     rng = np.random.default_rng(seed)
+
     picks = []
-    for _ in range(2000):
-        cy, cx = rng.integers(y0, y1), rng.integers(x0, x1)
-        if mask[cy + size // 2, cx + size // 2] == 0:
-            continue
-        if all(abs(cy - py) + abs(cx - px) > min_sep for py, px in picks):
-            picks.append((cy, cx))
-        if len(picks) == n:
-            break
+    for min_coverage in (1.0, 0.98, 0.9, 0.75, 0.0):
+        picks = []
+        for _ in range(4000):
+            cy, cx = rng.integers(y0, y1), rng.integers(x0, x1)
+            coverage = (mask[cy:cy + size, cx:cx + size] > 0).mean()
+            if coverage < min_coverage:
+                continue
+            if all(abs(cy - py) + abs(cx - px) > min_sep for py, px in picks):
+                picks.append((cy, cx))
+            if len(picks) == n:
+                return picks
     return picks
 
 

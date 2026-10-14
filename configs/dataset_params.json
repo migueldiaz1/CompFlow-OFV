@@ -2,10 +2,10 @@
   "SynthCells": {
     "PI-Flow": {"continuity": 4.0, "viscosity": 0.05, "L2regularizer": 0.0, "iterations": 100, "learning_rate": 0.01, "blur": 1, "dark_is_dense": true},
     "CompFlow": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.02, "loss_type": "mse", "huber_delta": 0.1, "L2regularizer": 0.0},
-    "CompFlow-Patch": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.05, "window_size": 5},
+    "CompFlow-Patch": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.05, "window_size": 3},
     "CompFlow-Fluid": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.02, "viscosity": 0.05},
     "NonCompFlow": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.02},
-    "NonCompFlow-Patch": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.05, "window_size": 5},
+    "NonCompFlow-Patch": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.05, "window_size": 3},
     "NonCompFlow-Fluid": {"blur": 1, "dark_is_dense": true, "iterations": 100, "learning_rate": 0.02, "viscosity": 0.05},
     "Horn-Schunck": {"alpha": 0.1, "num_iter": null},
     "Lucas-Kanade": {"win": 9},
