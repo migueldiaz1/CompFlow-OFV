@@ -1,0 +1,9 @@
+torch
+numpy
+opencv-python
+scipy
+
+# Optional -- only needed for the corresponding comparison baseline:
+# openpiv-python-cpu   # WIDIM-CC
+# PyWavelets           # Typhoon
+# ptlflow              # RAFT / PWC-Net / DPFlow
