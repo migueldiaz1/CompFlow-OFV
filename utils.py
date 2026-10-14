@@ -149,14 +149,17 @@ def colored_quiver(ax, u, v, mask, y0, x0, size, step=2.0, scale=30.0, width=0.0
 def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
                             zoom_regions, zoom_colors, zoom_size, suptitle=""):
     """Full breakdown, estimated vs. ground truth side by side: Frame 1,
-    Frame 2, density lost/gained, flow direction (CompFlow-Patch | GT),
-    |w| (CompFlow-Patch | GT), AAE error map, |w| error map -- 9 columns.
-    Full-cell row = dense per-pixel maps (no arrows); one row per zoom
-    region = colored quiver arrows, same HSV-direction convention
-    throughout. Direction/magnitude GT columns share their colorbar scale
-    with their estimated counterpart so the two are directly comparable;
-    the two error maps use the same per-pixel angular-error convention as
-    Metrics/aae_weighted.py (arccos of the unit-vector dot product)."""
+    Frame 2, density lost/gained, flow direction (CompFlow-Patch | GT |
+    AAE error map), |w| (CompFlow-Patch | GT | error map) -- 9 columns,
+    each error map right next to the pair it's the error of. Full-cell
+    row = dense per-pixel maps (no arrows); one row per zoom region =
+    colored quiver arrows, same HSV-direction convention throughout.
+    Direction/magnitude GT columns share their colorbar scale with their
+    estimated counterpart so the two are directly comparable; the two
+    error maps use the same per-pixel angular-error convention as
+    Metrics/aae_weighted.py (arccos of the unit-vector dot product), and
+    are drawn in red (cmap='Reds') so they're never mistaken for the
+    (purple/orange 'plasma') magnitude columns next to them."""
     overlay_rgb, vmax_diff = overlay_lost_gained(img1, img2, mask)
 
     dense_rgb, dense_vis = dense_direction_map(u_est, v_est, mask, img1, threshold=0.0)
@@ -179,8 +182,8 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
 
     titles = ["Frame 1\n(chromatin density)", "Frame 2\n(chromatin density)",
              "Density\nlost / gained", "Flow direction\n(CompFlow-Patch)",
-             "Flow direction\n(ground truth)", "$|\\mathbf{w}|$ (px/frame)\n(CompFlow-Patch)",
-             "$|\\mathbf{w}|$ (px/frame)\n(ground truth)", "AAE error map\n(deg)",
+             "Flow direction\n(ground truth)", "AAE error map\n(deg)",
+             "$|\\mathbf{w}|$ (px/frame)\n(CompFlow-Patch)", "$|\\mathbf{w}|$ (px/frame)\n(ground truth)",
              "$|\\mathbf{w}|$ error map\n(px/frame)"]
     NCOL = 9
     N_ZOOM = len(zoom_regions)
@@ -200,10 +203,10 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
     for j, (rgb, vis) in ((3, (dense_rgb, dense_vis)), (4, (dense_rgb_gt, dense_vis_gt))):
         axF[j].imshow(img1, cmap="gray", vmin=0, vmax=255)
         axF[j].imshow(np.concatenate([rgb, vis[..., None].astype(np.float32)], axis=-1))
-    axF[5].imshow(mag, cmap="plasma", vmin=0, vmax=vmax_mag)
-    axF[6].imshow(mag_gt, cmap="plasma", vmin=0, vmax=vmax_mag)
-    axF[7].imshow(aae_map, cmap="inferno", vmin=0, vmax=vmax_aae)
-    axF[8].imshow(mag_err_map, cmap="inferno", vmin=0, vmax=vmax_mag_err)
+    axF[5].imshow(aae_map, cmap="Reds", vmin=0, vmax=vmax_aae)
+    axF[6].imshow(mag, cmap="plasma", vmin=0, vmax=vmax_mag)
+    axF[7].imshow(mag_gt, cmap="plasma", vmin=0, vmax=vmax_mag)
+    axF[8].imshow(mag_err_map, cmap="Reds", vmin=0, vmax=vmax_mag_err)
 
     for ax, title in zip(axF, titles):
         ax.set_title(title, fontsize=12, fontweight="bold")
@@ -224,10 +227,10 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
         colored_quiver(ax[3], u_est, v_est, mask, y0, x0, zoom_size, step=2.0, scale=30.0, width=0.0032)
         ax[4].imshow(img1[sl], cmap="gray", vmin=0, vmax=255, extent=ext)
         colored_quiver(ax[4], u_gt, v_gt, mask, y0, x0, zoom_size, step=2.0, scale=30.0, width=0.0032)
-        ax[5].imshow(mag[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
-        ax[6].imshow(mag_gt[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
-        ax[7].imshow(aae_map[sl], cmap="inferno", vmin=0, vmax=vmax_aae, extent=ext)
-        ax[8].imshow(mag_err_map[sl], cmap="inferno", vmin=0, vmax=vmax_mag_err, extent=ext)
+        ax[5].imshow(aae_map[sl], cmap="Reds", vmin=0, vmax=vmax_aae, extent=ext)
+        ax[6].imshow(mag[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
+        ax[7].imshow(mag_gt[sl], cmap="plasma", vmin=0, vmax=vmax_mag, extent=ext)
+        ax[8].imshow(mag_err_map[sl], cmap="Reds", vmin=0, vmax=vmax_mag_err, extent=ext)
 
         ax[0].set_ylabel(f"zoom {i+1}", fontsize=12, fontweight="bold", color=color)
         for a in ax:
@@ -246,14 +249,14 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
     for j in (3, 4):
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, 360), cmap="hsv"),
                           cax=axC[j], orientation="horizontal", ticks=[0, 90, 180, 270, 360])
-    for j in (5, 6):
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_aae), cmap="Reds"),
+                      cax=axC[5], orientation="horizontal")
+    cb.set_ticks([0, vmax_aae])
+    for j in (6, 7):
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag), cmap="plasma"),
                           cax=axC[j], orientation="horizontal")
         cb.set_ticks([0, vmax_mag])
-    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_aae), cmap="inferno"),
-                      cax=axC[7], orientation="horizontal")
-    cb.set_ticks([0, vmax_aae])
-    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag_err), cmap="inferno"),
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag_err), cmap="Reds"),
                       cax=axC[8], orientation="horizontal")
     cb.set_ticks([0, vmax_mag_err])
 
@@ -263,4 +266,44 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
             a.set_xticks([]); a.set_yticks([])
 
     fig.suptitle(suptitle, fontsize=14, y=0.995)
+    plt.show()
+
+
+def plot_smoothing_comparison(img1, mask, u_raw, v_raw, u_smooth, v_smooth, u_gt, v_gt, suptitle=""):
+    """Quick 3x2 sanity check, full cell only: rows = raw / smoothed /
+    ground truth, columns = flow direction (dense HSV map) / |w|
+    magnitude -- lets you see at a glance whether smoothing actually
+    pulls the estimate closer to GT, before the full 9-column breakdown."""
+    rows = [("Raw", u_raw, v_raw), ("Smoothed", u_smooth, v_smooth), ("Ground truth", u_gt, v_gt)]
+    mags = [np.where(mask > 0, np.hypot(u, v), np.nan) for _, u, v in rows]
+    vmax_mag = float(np.nanmax([np.nanpercentile(m, 99) for m in mags]))
+
+    fig = plt.figure(figsize=(8.0, 12.6))
+    gs = fig.add_gridspec(4, 2, height_ratios=[1, 1, 1, 0.08], hspace=0.22, wspace=0.12,
+                          top=0.93, bottom=0.03, left=0.1, right=0.95)
+    axes = [[fig.add_subplot(gs[i, j]) for j in range(2)] for i in range(3)]
+    axC = [fig.add_subplot(gs[3, j]) for j in range(2)]
+
+    for i, ((label, u, v), mag) in enumerate(zip(rows, mags)):
+        dense_rgb, dense_vis = dense_direction_map(u, v, mask, img1, threshold=0.0)
+        axes[i][0].imshow(img1, cmap="gray", vmin=0, vmax=255)
+        axes[i][0].imshow(np.concatenate([dense_rgb, dense_vis[..., None].astype(np.float32)], axis=-1))
+        axes[i][0].set_ylabel(label, fontsize=12, fontweight="bold")
+        axes[i][1].imshow(mag, cmap="plasma", vmin=0, vmax=vmax_mag)
+
+    for j, title in enumerate(["Flow direction", "$|\\mathbf{w}|$ (px/frame)"]):
+        axes[0][j].set_title(title, fontsize=13, fontweight="bold")
+
+    for row in axes:
+        for ax in row:
+            ax.set_facecolor("black")
+            ax.set_xticks([]); ax.set_yticks([])
+
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, 360), cmap="hsv"),
+                      cax=axC[0], orientation="horizontal", ticks=[0, 90, 180, 270, 360])
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, vmax_mag), cmap="plasma"),
+                      cax=axC[1], orientation="horizontal")
+    cb.set_ticks([0, vmax_mag])
+
+    fig.suptitle(suptitle, fontsize=14, y=0.985)
     plt.show()
