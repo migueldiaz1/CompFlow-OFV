@@ -232,17 +232,3 @@ def plot_motion_map_with_gt(img1, img2, mask, u_est, v_est, u_gt, v_gt,
 
     fig.suptitle(suptitle, fontsize=14, y=0.995)
     plt.show()
-
-
-def plot_dense_direction_comparison(img1, mask, u_a, v_a, u_b, v_b, title_a, title_b):
-    """Side-by-side dense direction maps -- used for the cross-check
-    section (GitHub repo vs. the original implementation)."""
-    fig, axes = plt.subplots(1, 2, figsize=(9, 4.5))
-    for ax, u, v, title in ((axes[0], u_a, v_a, title_a), (axes[1], u_b, v_b, title_b)):
-        rgb, visible = dense_direction_map(u, v, mask, img1, threshold=0.0)
-        ax.imshow(img1, cmap="gray", vmin=0, vmax=255)
-        ax.imshow(np.concatenate([rgb, visible[..., None].astype(np.float32)], axis=-1))
-        ax.set_title(title)
-        ax.set_xticks([]); ax.set_yticks([])
-    fig.tight_layout()
-    plt.show()

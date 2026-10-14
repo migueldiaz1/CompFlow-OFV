@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# setup.sh
+# setup.sh (Linux/macOS -- see setup.bat for Windows)
 # =========
-# Creates the virtual environment this notebook runs in (venv/, kernel name
-# "CompFlow Demo") and registers it with Jupyter. Not committed to git --
-# run this once after cloning, then open compflow_demo.ipynb and pick the
-# "CompFlow Demo" kernel.
+# Creates the virtual environment this notebook runs in (venv/) and
+# registers it as the standard "Python 3" Jupyter kernel. venv/ is not
+# committed to git -- run this once after cloning, then open
+# compflow_demo.ipynb and pick the "Python 3" kernel.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -26,8 +26,8 @@ if missing:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 PY
 
-venv/bin/python -m ipykernel install --user --name=compflow-demo --display-name "CompFlow Demo"
+venv/bin/python -m ipykernel install --user --name=python3 --display-name "Python 3"
 
 echo
-echo "Done. Open compflow_demo.ipynb and select the 'CompFlow Demo' kernel"
+echo "Done. Open compflow_demo.ipynb and select the 'Python 3' kernel"
 echo "(jupyter notebook / jupyter lab, or your IDE's kernel picker)."
