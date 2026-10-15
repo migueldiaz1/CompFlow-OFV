@@ -61,9 +61,9 @@ configs/
     dataset_params.json  calibrated parameters for every (dataset, method) pair, exactly as used by main.py in the paper
 
 Datasets/                 small sample zips to try inference on (see below) -- NOT the full research datasets
-    SynthCells_sample.zip  30 pairs, with dense ground truth
+    SynthCells_sample.zip  300 pairs (16 curated videos), dense ground truth, + 1 complete 201-frame video
     SQG_sample.zip          30 pairs, with dense ground truth
-    RealCells_sample.zip    20 pairs (one per test-split video), no ground truth
+    RealCells_sample.zip    300 pairs (17 curated videos), no ground truth, + 1 complete video
     load_sample.py          helper to read pairs out of the zips
 
 inference.py             dataset-aware registry + simple two-frame inference entry point
@@ -132,7 +132,9 @@ aae_w = compute_aae_weighted(u_gt, v_gt, u, v)                           # needs
 
 ## Trying it on sample data
 
-`Datasets/` ships small sample zips so you can run the code without needing your own frames. These are **not** the full research datasets -- SynthCells alone is ~100 GB and SQG ~924 MB, both well past what a normal git repository (no LFS) can hold -- just enough pairs (30 / 30 / 20) to try every method and sanity-check the numbers against the paper.
+`Datasets/` ships small sample zips so you can run the code without needing your own frames. These are **not** the full research datasets -- SynthCells alone is ~100 GB and SQG ~924 MB, both well past what a normal git repository (no LFS) can hold -- just enough pairs (300 / 30 / 300) to try every method and sanity-check the numbers against the paper.
+
+`SynthCells_sample.zip` and `RealCells_sample.zip` each hold two folders: `other_sampled_pairs/` (the pairs `load_pair`/`n_pairs` read, several per video, spread across 16/17 curated videos -- a handful of videos were excluded after a visual QC pass found a flat/textureless simulation shared by one patient's video in both datasets, a failed SAM 2 segmentation, and an edge-cropped cell) and `complete_sample_video/`, one full, untouched video (all 201 simulation frames for SynthCells, or the original 285-frame `.mp4` for RealCells) plus its own `README.txt`, for anyone who wants to build their own pair at a different frame separation (dt) instead of the single-step ones in `other_sampled_pairs/`.
 
 ```python
 import sys
@@ -154,7 +156,7 @@ if gt is not None:
     print("AAE_w:", compute_aae_weighted(gt["u_gt"], gt["v_gt"], u, v, mask=gt.get("mask")))
 ```
 
-Use `"Datasets/SQG_sample.zip"` with `dataset="SQG"`, or `"Datasets/RealCells_sample.zip"` with `dataset="RealCells"` (no `gt` there -- use `compute_warping_error_dc` instead, which needs no ground truth). `RealCells_sample.zip` contains **raw** frame pairs straight from the video (no SAM 2 segmentation / registration / contrast enhancement applied -- that pipeline isn't in this repository yet), so computing `compute_warping_error_dc` on it (no `mask`) is **not** directly comparable to the paper's RealCells WE<sub>DC</sub> (Table 3), which is averaged only inside the SAM 2 cell mask -- without it the background dilutes the error downward. SynthCells/SQG sample metrics (AEPE, AAE<sub>w</sub>, and masked WE<sub>DC</sub>) match the paper's full-dataset numbers closely (within normal sampling variance for 30 pairs vs. thousands).
+Use `"Datasets/SQG_sample.zip"` with `dataset="SQG"`, or `"Datasets/RealCells_sample.zip"` with `dataset="RealCells"` (no `gt` there -- use `compute_warping_error_dc` instead, which needs no ground truth). `RealCells_sample.zip` contains **raw** frame pairs straight from the video (no SAM 2 segmentation / registration / contrast enhancement applied -- that pipeline isn't in this repository yet), so computing `compute_warping_error_dc` on it (no `mask`) is **not** directly comparable to the paper's RealCells WE<sub>DC</sub> (Table 3), which is averaged only inside the SAM 2 cell mask -- without it the background dilutes the error downward. SynthCells/SQG sample metrics (AEPE, AAE<sub>w</sub>, and masked WE<sub>DC</sub>) match the paper's full-dataset numbers closely (within normal sampling variance for a few hundred pairs vs. thousands).
 
 ## Demo notebook
 
