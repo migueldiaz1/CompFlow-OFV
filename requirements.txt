@@ -7,3 +7,8 @@ scipy
 # openpiv-python-cpu   # WIDIM-CC
 # PyWavelets           # Typhoon
 # ptlflow              # RAFT / PWC-Net / DPFlow
+
+# Optional -- only needed for tools/ (synthetic video generation), and only
+# with its default SEGMENTATION_METHOD = "sam" (see tools/README.md):
+# sam2  (pip install "git+https://github.com/facebookresearch/sam2.git", plus a checkpoint)
+# nd2   (only to sample a seed frame from a raw .nd2 file)

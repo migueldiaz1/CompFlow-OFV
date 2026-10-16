@@ -2,7 +2,7 @@
 
 Training-free, physics-informed optical flow for intracellular density dynamics in live-cell microscopy (chromatin motion in leukemic cells).
 
-This repository contains the **optical flow / motion estimation code only**: the seven density-flow variants proposed and ablated in the paper, the baseline comparison methods benchmarked against them, and the evaluation metrics (AEPE, AAE weighted, WE<sub>DC</sub>). The preprocessing pipeline (SAM 2 segmentation, rigid registration, 3D-CLAHE) is not included here (separate repository/folder, coming later).
+This repository contains the **optical flow / motion estimation code**: the seven density-flow variants proposed and ablated in the paper, the baseline comparison methods benchmarked against them, the evaluation metrics (AEPE, AAE weighted, WE<sub>DC</sub>), and (`tools/`) the synthetic training-data generator. The video preprocessing pipeline (SAM 2 segmentation, rigid registration, temporal CLAHE) is a separate repository: [StableCells](https://github.com/migueldiaz1/StableCells).
 
 This copy additionally bundles `compflow_demo.ipynb`, a runnable walkthrough notebook -- see [Demo notebook](#demo-notebook) below.
 
@@ -66,6 +66,14 @@ Datasets/                 small sample zips to try inference on (see below) -- N
     RealCells_sample.zip    300 pairs (17 curated videos), no ground truth, + 1 complete video
     load_sample.py          helper to read pairs out of the zips
 
+tools/                    synthetic training-data generator (the process that built SynthCells_sample.zip)
+    physics.py             the velocity-field simulation + density advection
+    segmentation.py        cell segmentation: SAM 2 (seeded by Hough) or Hough alone
+    video_io.py             reading a seed frame, resizing, naming
+    generate_synthetic_video.py  orchestrates the above into one simulation
+    generate_videos_walkthrough.ipynb  step-by-step notebook, with a rendered example
+    configs/default_params.py    its own parameters (segmentation method, physics, output)
+
 inference.py             dataset-aware registry + simple two-frame inference entry point
 requirements.txt         core dependencies (optional baseline dependencies listed as comments)
 
@@ -80,6 +88,7 @@ setup.sh, setup.bat        creates the virtual environment + Jupyter kernel the 
 - `openpiv-python-cpu` (only for `WIDIM-CC`)
 - `PyWavelets` (only for `Typhoon`; imported as `pywt`)
 - `ptlflow` (only for `RAFT`/`PWC-Net`/`DPFlow`)
+- SAM 2 (only for `tools/`'s synthetic-data generator, and only with its default `SEGMENTATION_METHOD = "sam"`; see `tools/README.md`)
 
 Each comparison method only needs its own dependency, and it is imported only when that method is selected, so `CompFlow/` and the classical baselines work without the optional packages installed.
 
