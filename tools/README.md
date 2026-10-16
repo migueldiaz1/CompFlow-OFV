@@ -22,19 +22,6 @@ generate_videos_walkthrough.ipynb   step-by-step notebook, with a rendered examp
 expected_output/                    one example simulation's output (see Example below)
 ```
 
-## A note on the physics
-
-`physics.py` is not the version in the original project's
-`generate_fluid_dataset_v3.py` -- it's `physics_v3_original.py`, a version
-from ~2.5 hours before the real dataset was built, recovered after the
-in-repo version turned out to have been edited a month later in a way that
-silently stopped reproducing it. The difference is one line in the
-boundary-condition kernel (`(1, 1)` vs `(3, 3)`) -- see `physics.py`'s
-module docstring for the full story and the numbers that confirm which one
-actually matches real samples. If you only take one thing from that
-docstring: this generator's default behavior is a (likely accidental)
-no-op boundary condition, kept deliberately because it's what the dataset
-was actually built with.
 
 ## Requirements
 
