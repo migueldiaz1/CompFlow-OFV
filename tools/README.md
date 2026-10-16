@@ -54,8 +54,18 @@ run_simulation("real_cell_video.mp4", "output/sim_00", frames=200, sam=sam, seed
 
 Writes `img_t_NNN.tiff` / `img_tp1_NNN.tiff` (float32, `[0, 1]`) and
 `flow_NNN.npy` (float32, shape `(2, H, W)` -- `[U, V]`) for each of the
-`frames` steps, plus `sim.mp4` for a quick look -- the same triplet format
-`Datasets/load_sample.py` reads out of `SynthCells_sample.zip`.
+`frames` steps, plus `mask.npy` (`uint8`, `{0, 1}`, one per simulation --
+the cell mask is the same for every step, see `run_simulation`'s own
+docstring for why this matters) and `sim.mp4` for a quick look -- the same
+format `Datasets/load_sample.py` reads out of `SynthCells_sample.zip`
+(`gt['u_gt']`/`gt['v_gt']`/`gt['mask']`).
+
+**Always mask any per-pixel metric with `mask.npy`** -- ground truth is
+exactly zero in the background by construction, and most methods are
+comparatively bad at estimating "zero" in a textureless region, so an
+unmasked whole-frame metric can be dominated by the background rather than
+reflecting accuracy on the actual motion (a cross-correlation/PIV method
+being the most affected in practice).
 
 Or edit `configs/default_params.py`'s `INPUT_VIDEO` / `OUTPUT_DIR` and run
 `python3 generate_synthetic_video.py` for one simulation from the command

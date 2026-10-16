@@ -1,6 +1,7 @@
 """Orchestrates one synthetic video: read a seed frame, segment the cell,
 simulate `config.FRAMES_PER_SIM` steps of the physics in `physics.py`, and
-write out the (img_t, img_tp1, flow) triplets plus a preview .mp4.
+write out the (img_t, img_tp1, flow) triplets, the cell mask, and a
+preview .mp4.
 """
 
 import os
@@ -19,9 +20,19 @@ def run_simulation(video_path: str, out_dir: str, frames: int,
     """Generates one simulation from a random frame of `video_path` into
     `out_dir`: `frames` triplets of `img_t_NNN.tiff` / `img_tp1_NNN.tiff`
     (float32, [0, 1]) / `flow_NNN.npy` (float32, shape (2, H, W) -- [U, V]),
-    plus `sim.mp4` for a quick look. `seed` makes the frame choice and the
+    plus `mask.npy` (uint8, {0, 1}, same (H, W) -- the cell mask used for
+    every step of this simulation, so it's saved once, not per step) and
+    `sim.mp4` for a quick look. `seed` makes the frame choice and the
     random motion field fully reproducible; `sam=None` segments with Hough
-    alone instead of SAM 2."""
+    alone instead of SAM 2.
+
+    Always use `mask` to restrict any per-pixel metric (AEPE, ...) to the
+    cell -- GT flow is exactly zero in the background by construction
+    (`physics.py`'s boundary condition), and most methods are comparatively
+    bad at estimating "zero" in a textureless region, so including the
+    background inflates whole-frame error metrics by an order of magnitude
+    for some methods without reflecting anything about their real accuracy
+    on the actual motion."""
     if seed is not None:
         np.random.seed(seed)
 
@@ -37,6 +48,8 @@ def run_simulation(video_path: str, out_dir: str, frames: int,
         mask = np.clip(mask, 0.0, 1.0)
     else:
         mask = mask_full
+
+    np.save(os.path.join(out_dir, "mask.npy"), (mask > 0.5).astype(np.uint8))
 
     h, w = seed_frame.shape[:2]
     image = cv2.cvtColor(seed_frame, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
