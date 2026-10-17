@@ -1,8 +1,3 @@
-"""Orchestrates one synthetic video: read a seed frame, segment the cell,
-simulate `config.FRAMES_PER_SIM` steps of the physics in `physics.py`, and
-write out the (img_t, img_tp1, flow) triplets, the cell mask, and a
-preview .mp4.
-"""
 
 import os
 
@@ -17,22 +12,7 @@ from video_io import clean_video_name, get_random_frame, resize_frame
 
 def run_simulation(video_path: str, out_dir: str, frames: int,
                     sam: SAM2VideoSegmenter | None = None, seed: int | None = None) -> str:
-    """Generates one simulation from a random frame of `video_path` into
-    `out_dir`: `frames` triplets of `img_t_NNN.tiff` / `img_tp1_NNN.tiff`
-    (float32, [0, 1]) / `flow_NNN.npy` (float32, shape (2, H, W) -- [U, V]),
-    plus `mask.npy` (uint8, {0, 1}, same (H, W) -- the cell mask used for
-    every step of this simulation, so it's saved once, not per step) and
-    `sim.mp4` for a quick look. `seed` makes the frame choice and the
-    random motion field fully reproducible; `sam=None` segments with Hough
-    alone instead of SAM 2.
-
-    Always use `mask` to restrict any per-pixel metric (AEPE, ...) to the
-    cell -- GT flow is exactly zero in the background by construction
-    (`physics.py`'s boundary condition), and most methods are comparatively
-    bad at estimating "zero" in a textureless region, so including the
-    background inflates whole-frame error metrics by an order of magnitude
-    for some methods without reflecting anything about their real accuracy
-    on the actual motion."""
+    
     if seed is not None:
         np.random.seed(seed)
 
@@ -58,10 +38,7 @@ def run_simulation(video_path: str, out_dir: str, frames: int,
     video_path_out = os.path.join(out_dir, "sim.mp4")
     writer = cv2.VideoWriter(video_path_out, cv2.VideoWriter_fourcc(*config.MP4_FOURCC), config.MP4_FPS, (w, h))
 
-    # Pre-generate all of this simulation's random noise at once, with zero
-    # temporal mean per pixel -- otherwise the per-frame noise would have a
-    # small random net bias that accumulates into visible drift over
-    # `frames` steps.
+ 
     U_rand = np.random.randn(h, w, frames)
     V_rand = np.random.randn(h, w, frames)
     U_rand -= U_rand.mean(axis=-1, keepdims=True)
@@ -72,6 +49,7 @@ def run_simulation(video_path: str, out_dir: str, frames: int,
             density, mask, U_rand[:, :, i], V_rand[:, :, i],
             grad_weight=config.GRAD_WEIGHT, rand_weight=config.RAND_WEIGHT,
             intensity=config.INTENSITY, viscosity=config.VISCOSITY,
+            boundary_damping=getattr(config, "BOUNDARY_DAMPING", 0.4),
         )
         density_prev = density.copy()
         density = advect_density_compressible(density, U, V)

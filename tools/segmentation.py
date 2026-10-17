@@ -1,12 +1,3 @@
-"""Cell segmentation for the synthetic generator: a binary/soft mask marking
-where the physics in `physics.py` is allowed to move density around.
-
-SAM 2 gives the most accurate mask and is the default, but -- same pattern
-as the preprocessing pipeline -- it is itself seeded by a plain Hough circle
-fit, and `segment_cell` falls back to that circle alone (as a soft mask) if
-no SAM 2 checkpoint is configured, so the generator still runs without one.
-"""
-
 import os
 import shutil
 
@@ -20,9 +11,7 @@ def apply_clahe(frame_gray: np.ndarray) -> np.ndarray:
 
 
 def get_hough_seed(frame_gray: np.ndarray) -> tuple[int, int, int]:
-    """Returns (cx, cy, r) for the cell circle closest to the frame center,
-    via a Hough circle transform -- falls back to a frame-centered guess if
-    none is found."""
+
     blurred = cv2.GaussianBlur(frame_gray, (11, 11), 0)
     h, w = frame_gray.shape
     circles = cv2.HoughCircles(
@@ -49,18 +38,14 @@ def filter_largest_blob(mask_uint8: np.ndarray) -> np.ndarray:
 
 
 def _soften_mask(mask_uint8: np.ndarray) -> np.ndarray:
-    """Shrinks the mask slightly and feathers its edge, so the physics'
-    boundary condition acts on a soft, slightly conservative boundary
-    rather than a hard one."""
+
     kernel = np.ones((7, 7), np.uint8)
     eroded = cv2.erode(mask_uint8, kernel, iterations=1)
     return cv2.GaussianBlur(eroded, (15, 15), 0).astype(np.float32) / 255.0
 
 
 class SAM2VideoSegmenter:
-    """Keeps a SAM 2 (video) predictor loaded in GPU memory across calls --
-    loading it is the slow part, so this is meant to be built once and
-    reused for every simulation in a batch."""
+   
 
     def __init__(self, model_config: str, checkpoint: str, device: str = "cuda"):
         from sam2.build_sam import build_sam2_video_predictor
@@ -71,10 +56,7 @@ class SAM2VideoSegmenter:
         print("[SAM 2] Ready.")
 
     def segment(self, frame_bgr: np.ndarray, work_dir: str) -> np.ndarray:
-        """Returns a soft (float32, [0, 1]) mask of the main object in
-        `frame_bgr`, seeded by a Hough circle (box + center point prompts).
-        `work_dir` is used for SAM 2's own required on-disk frame cache and
-        is cleaned up afterwards."""
+    
         frame_gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
 
         temp_in = os.path.join(work_dir, "_sam2_frame_cache")
@@ -111,10 +93,7 @@ class SAM2VideoSegmenter:
 
 
 def segment_cell(frame_bgr: np.ndarray, work_dir: str, sam: SAM2VideoSegmenter | None = None) -> np.ndarray:
-    """Segments the cell in `frame_bgr` with SAM 2 (`sam`) if given,
-    otherwise falls back to a plain filled Hough circle -- same soft-edge
-    post-processing either way, so `physics.py` sees a consistent mask
-    format regardless of which one ran."""
+
     if sam is not None:
         return sam.segment(frame_bgr, work_dir)
 

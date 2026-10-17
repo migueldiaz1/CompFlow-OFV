@@ -38,6 +38,13 @@ INTENSITY = 0.35
 # Gaussian smoothing (sigma, px) applied to the combined field -- higher is
 # smoother/more viscous motion, lower is noisier/more granular.
 VISCOSITY = 4.0
+# Strength (0-1) of the membrane non-penetration correction at the cell
+# boundary: 0 = no correction at all (density can cross the mask edge
+# freely), 1 = the paper's Eq. 10 exactly (full-strength projection) --
+# which visibly bakes the mask's contour into the video as a ring over many
+# frames. 0.4 is a deliberate, softened middle ground -- see physics.py's
+# module docstring for the full story.
+BOUNDARY_DAMPING = 0.4
 
 # Output video.
 MP4_FPS = 20

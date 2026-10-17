@@ -1,6 +1,3 @@
-"""Reading a seed frame for the generator (from a video, an .nd2 stack, or
-a plain image) and small frame utilities."""
-
 import os
 import random
 
@@ -9,15 +6,6 @@ import numpy as np
 
 
 def get_random_frame(filepath: str, seed: int | None = None) -> np.ndarray:
-    """Returns a single BGR uint8 frame from `filepath`.
-
-    - `.mp4` (or other OpenCV-readable video): a random frame.
-    - `.nd2`: a random slice of its first (time) axis.
-    - a plain image (`.png`/`.jpg`/`.tif`/...): that image, as-is.
-
-    `seed` makes the random pick reproducible; `None` uses whatever global
-    random state is current.
-    """
     rng = random.Random(seed)
     ext = os.path.splitext(filepath)[1].lower()
 
@@ -61,11 +49,7 @@ def get_random_frame(filepath: str, seed: int | None = None) -> np.ndarray:
 
 
 def resize_frame(frame_bgr: np.ndarray, target_size: tuple[int, int] | None) -> np.ndarray:
-    """Resizes `frame_bgr` to `target_size` = (height, width); `None` leaves
-    it untouched. Done once, right after reading the seed frame and before
-    segmentation/simulation, so the whole pipeline -- and the ground-truth
-    flow it produces -- runs natively at `target_size` with no later
-    rescaling."""
+
     if target_size is None:
         return frame_bgr
     target_h, target_w = target_size
@@ -77,6 +61,6 @@ def resize_frame(frame_bgr: np.ndarray, target_size: tuple[int, int] | None) -> 
 
 
 def clean_video_name(path: str) -> str:
-    """A filesystem-safe name for `path`, usable as an output folder name."""
+    
     base = os.path.splitext(os.path.basename(path))[0]
     return base.replace(" ", "_").replace("(", "").replace(")", "")
